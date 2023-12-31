@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <link rel="stylesheet" href="page2.css">
+  <meta charset="UTF-8">
+  <title>Page des Joueurs - Jeux du Buzzer</title>
+  <style>
+    /* Styling pour la page */
+    /* Tu peux ajouter plus de styles ici */
+  </style>
+</head>
+<body>
+  <header>
+    <button id="leave-game-btn">Quitter la partie</button>
+    <h1>Classement</h1>
+    <ol id="leaderboard"></ol>
+  </header>
+  
+  <main>
+    <button id="toggle-buzzer-btn" class="buzzer-enabled">Buzzer</button>
+  </main>
+  
+  <footer>
+    <p>Code de la partie : <span id="game-code">ABC123</span></p>
+    <button id="copyGameCode">Copier le code</button>
+  </footer>
+
+  <script>
+    const MAX_PLAYERS = 3;
+    let players = [];
+    let buzzerEnabled = true;
+    let buzzerClicked = false;
+
+    document.getElementById('leave-game-btn').addEventListener('click', function() {
+      alert('Partie quittée!');
+      window.location.href = 'page1.html';
+    });
+
+    const gameCode = localStorage.getItem('gameCode');
+    document.getElementById('game-code').textContent = gameCode;
+
+    function copyGameCode() {
+      const gameCodeElement = document.getElementById('game-code');
+      const codeToCopy = gameCodeElement.textContent;
+
+      const tempInput = document.createElement('input');
+      tempInput.value = codeToCopy;
+      document.body.appendChild(tempInput);
+
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      alert('Code copié dans le presse-papiers : ' + codeToCopy);
+    }
+
+    document.getElementById('copyGameCode').addEventListener('click', copyGameCode);
+
+    function updateLeaderboard() {
+      const leaderboard = document.getElementById('leaderboard');
+      leaderboard.innerHTML = '';
+
+      const playersToShow = players.slice(0, MAX_PLAYERS);
+
+      playersToShow.forEach((player, index) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `Joueur ${index + 1}: ${player.name}`;
+        leaderboard.appendChild(listItem);
+      });
+    }
+
+    function handleBuzzerClick() {
+      const buzzerStatus = document.getElementById('toggle-buzzer-btn').textContent;
+
+      if (buzzerEnabled && buzzerStatus === 'Buzzer' && !buzzerClicked) {
+        buzzerClicked = true;
+        const playerName = localStorage.getItem('playerName');
+        if (playerName) {
+          const player = { name: playerName, timestamp: Date.now() };
+          players.push(player);
+          players.sort((a, b) => a.timestamp - b.timestamp);
+          updateLeaderboard();
+          document.getElementById('toggle-buzzer-btn').classList.remove('buzzer-enabled');
+          document.getElementById('toggle-buzzer-btn').classList.add('buzzer-disabled');
+
+          // Mettre à jour le stockage local
+          localStorage.setItem('buzzerState', JSON.stringify({ clicked: true, players }));
+        }
+      } else {
+        document.getElementById('toggle-buzzer-btn').classList.remove('buzzer-disabled');
+        document.getElementById('toggle-buzzer-btn').classList.add('buzzer-enabled');
+      }
+    }
+
+    document.getElementById('toggle-buzzer-btn').addEventListener('click', handleBuzzerClick);
+
+    const resetInterval = setInterval(() => {
+      players = [];
+      updateLeaderboard();
+      buzzerEnabled = true;
+      buzzerClicked = false;
+      document.getElementById('toggle-buzzer-btn').classList.remove('buzzer-disabled');
+      document.getElementById('toggle-buzzer-btn').classList.add('buzzer-enabled');
+    }, 35000);
+
+    const buzzerCooldown = 30000;
+    const cooldownInterval = setInterval(() => {
+      buzzerEnabled = false;
+      document.getElementById('toggle-buzzer-btn').classList.add('buzzer-disabled');
+    }, buzzerCooldown);
+
+    // Au chargement de la page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Récupérer l'état du buzzer depuis le stockage local
+      const buzzerState = JSON.parse(localStorage.getItem('buzzerState')) || {};
+      buzzerClicked = buzzerState.clicked || false;
+      players = buzzerState.players || [];
+
+      // Mettre à jour l'interface utilisateur en conséquence
+      if (buzzerClicked) {
+        document.getElementById('toggle-buzzer-btn').classList.remove('buzzer-enabled');
+        document.getElementById('toggle-buzzer-btn').classList.add('buzzer-disabled');
+      }
+
+      // ... autres initialisations ...
+    });
+
+    const playerName = localStorage.getItem('playerName');
+    if (playerName) {
+      const leaderboard = document.getElementById('leaderboard');
+      const listItem = document.createElement('li');
+      listItem.textContent = playerName;
+      leaderboard.appendChild(listItem);
+    }
+
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'closeGame') {
+        localStorage.removeItem('gameCode');
+        window.location.href = 'page1.html';
+      }
+    });
+
+    document.getElementById('close-game-btn').addEventListener('click', function() {
+      localStorage.removeItem('gameCode');
+      window.parent.postMessage({ type: 'closeGame' }, '*');
+      window.location.href = 'page1.html';
+    });
+  </script>
+</body>
+</html>
