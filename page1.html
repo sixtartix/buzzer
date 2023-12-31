@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Page d'Accueil - Jeux du Buzzer</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Ajoute tes styles spécifiques ici si nécessaire */
+  </style>
+</head>
+<body>
+  <header>
+    <div id="pseudo-container">
+      <input type="text" id="pseudo-input" placeholder="Choisis ton pseudo">
+      <button id="change-pseudo-btn">Modifier</button>
+    </div>
+  </header>
+  <main>
+    <button id="join-game-btn">Rejoindre une partie</button>
+    <button id="create-game-btn">Créer une partie</button>
+    <div id="access-key-container" style="display: none;">
+      <label for="access-key-input">Entrez le code de la partie :</label>
+      <input type="text" id="access-key-input" placeholder="Code à 5 caractères">
+      <button id="submit-key-btn">Rejoindre</button>
+    </div>
+  </main>
+
+  <script>
+    // Stockage des codes de parties et des pseudos des créateurs
+    const gameCodes = new Map(); // Utilisation d'une Map pour stocker les codes de parties
+    const gameCreators = new Map(); // Utilisation d'une Map pour stocker les pseudos des créateurs
+
+    // Vérification et récupération du pseudo du localStorage s'il existe
+    const storedPlayerName = localStorage.getItem('playerName');
+    if (storedPlayerName) {
+      document.getElementById('pseudo-input').value = storedPlayerName;
+    }
+
+    // Fonction pour changer le pseudo
+    document.getElementById('change-pseudo-btn').addEventListener('click', function() {
+      const newPseudo = document.getElementById('pseudo-input').value;
+      alert('Pseudo changé en : ' + newPseudo);
+      // Ajoute ici les actions pour changer le pseudo
+      localStorage.setItem('playerName', newPseudo);
+    });
+
+    // Fonction pour créer une partie
+    document.getElementById('create-game-btn').addEventListener('click', function() {
+      const pseudo = document.getElementById('pseudo-input').value;
+      if (pseudo.trim() === '') {
+        alert('Veuillez entrer un pseudo.');
+        return;
+      }
+      const code = generateRandomCode().toUpperCase(); // Convertir le code en majuscules
+      gameCodes.set(code, pseudo);
+      gameCreators.set(code, pseudo);
+
+      // Enregistrer le nom du joueur dans le localStorage
+      localStorage.setItem('playerName', pseudo);
+
+      // Enregistrer le code de la partie dans le localStorage
+      localStorage.setItem('gameCode', code);
+
+      // Stockage de l'état du buzzer pour la nouvelle partie
+      localStorage.setItem('buzzerState', JSON.stringify({ clicked: false, players: [] }));
+
+      // Rediriger vers la page 3
+      alert('Partie créée avec le code : ' + code);
+      window.location.href = 'page 3.html';
+    });
+
+    // Fonction pour afficher le formulaire de la clé d'accès
+    document.getElementById('join-game-btn').addEventListener('click', function() {
+      const pseudo = document.getElementById('pseudo-input').value;
+      if (pseudo.trim() === '') {
+        alert('Veuillez entrer un pseudo.');
+        return;
+      }
+      document.getElementById('access-key-container').style.display = 'block';
+      // Ajoute ici les actions pour demander la clé d'accès
+    });
+
+    document.getElementById('submit-key-btn').addEventListener('click', function() {
+      const accessKey = document.getElementById('access-key-input').value.toUpperCase(); // Convertir en majuscules
+      const storedCode = localStorage.getItem('gameCode');
+
+      if (storedCode === accessKey) {
+        alert('Code d\'accès valide : ' + accessKey);
+        // Récupérer et enregistrer l'état du buzzer pour la partie
+        const buzzerState = JSON.parse(localStorage.getItem('buzzerState')) || {};
+        buzzerState.clicked = false;
+        buzzerState.players = [];
+        localStorage.setItem('buzzerState', JSON.stringify(buzzerState));
+
+        window.location.href = 'page 2.html'; // Redirection vers la page 2
+      } else {
+        alert('Code d\'accès invalide.');
+      }
+    });
+
+    function generateRandomCode() {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let code = '';
+      for (let i = 0; i < 5; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return code;
+    }
+  </script>
+</body>
+</html>
