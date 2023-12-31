@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <head>
+    <link rel="stylesheet" href="page3.css">
+  <meta charset="UTF-8">
+  <title>Page Créateur - Jeux du Buzzer</title>
+  <style>
+    /* Styling pour la page */
+    /* Tu peux ajouter plus de styles ici */
+  </style>
+</head>
+<body>
+  <header>
+    <button id="close-game-btn">Fermer la partie</button>
+    <h1>Classement</h1>
+    <ol id="leaderboard">
+      <li>Joueur 1</li>
+      <li>Joueur 2</li>
+      <li>Joueur 3</li>
+    </ol>
+    <button id="toggle-buzzer-btn">Buzzer Off</button>
+  </header>
+  <footer>
+    <p>Code : <span id="access-key"></span></p>
+    <button id="copyGameCode">Copier le code</button>
+  </footer>
+  <script>
+    // Récupération du code de la partie depuis le localStorage de la page 1
+    const gameCode = localStorage.getItem('gameCode');
+
+    // Affichage du code de la partie
+    document.getElementById('access-key').textContent = gameCode || 'Aucun code disponible';
+
+    // Fonction pour copier le code dans le presse-papiers
+    function copyGameCode() {
+      const codeToCopy = document.getElementById('access-key').textContent;
+
+      // Création d'un élément temporaire input
+      const tempInput = document.createElement('input');
+      tempInput.value = codeToCopy;
+      document.body.appendChild(tempInput);
+
+      // Sélection et copie du texte
+      tempInput.select();
+      document.execCommand('copy');
+
+      // Suppression de l'élément temporaire input
+      document.body.removeChild(tempInput);
+
+      alert('Code copié dans le presse-papiers : ' + codeToCopy);
+    }
+
+    // Écouteur pour le bouton de copie du code
+    document.getElementById('copyGameCode').addEventListener('click', copyGameCode);
+
+    // Fonction pour mettre à jour l'état du buzzer
+    function updateBuzzer(status) {
+      const buzzerButton = document.getElementById('toggle-buzzer-btn');
+      buzzerButton.textContent = status ? 'Buzzer On' : 'Buzzer Off';
+    }
+
+    // Écouteur pour le bouton de bascule du buzzer
+    document.getElementById('toggle-buzzer-btn').addEventListener('click', function() {
+      const currentStatus = document.getElementById('toggle-buzzer-btn').textContent;
+      const newStatus = currentStatus === 'Buzzer Off' ? 'Buzzer On' : 'Buzzer Off';
+      updateBuzzer(newStatus === 'Buzzer On');
+
+      // Envoi du message à la page 2 pour mettre à jour l'état du buzzer
+      window.opener.postMessage({ type: 'buzzerStatus', status: newStatus }, '*');
+    });
+
+    // Écouteur pour le bouton de fermeture de la partie
+    document.getElementById('close-game-btn').addEventListener('click', function() {
+      const code = gameCode || generateRandomCode();
+      localStorage.setItem('gameCode', code);
+      document.getElementById('access-key').textContent = code;
+      
+      // Envoi du message à la page 2 pour mettre à jour le code
+      window.opener.postMessage({ type: 'gameCode', code: code }, '*');
+    });
+
+    // Fonction pour générer un code aléatoire de 5 caractères
+    function generateRandomCode() {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let code = '';
+      for (let i = 0; i < 5; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return code;
+    }
+
+    // Charger le code stocké au chargement de la page
+    window.onload = function() {
+      const storedCode = localStorage.getItem('gameCode');
+      document.getElementById('access-key').textContent = storedCode || 'Aucun code disponible';
+    };
+
+    // Réception du message de la page 2 pour mettre à jour le statut du buzzer
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'buzzerStatus') {
+        updateBuzzer(event.data.status === 'Buzzer On');
+      }
+    });
+
+    document.getElementById('close-game-btn').addEventListener('click', function() {
+    // Supprimer le code de la partie du localStorage
+    localStorage.removeItem('gameCode');
+
+    // Envoi du message à la page 2 pour la rediriger vers la page 1
+    window.parent.postMessage({ type: 'closeGame' }, '*');
+
+    // Rediriger vers la page d'accueil (page 1)
+    window.location.href = 'page1.html';
+  });
+  </script>
+</body>
+</html>
